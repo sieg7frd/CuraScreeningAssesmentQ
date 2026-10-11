@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
+<title>CURA Package Finder</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: one centered column, one question per screen, big tap targets for a busy booth. The result screen leads with the final price. */
+:root{
+  --bg:#F2F5F2; --surface:#FBFCFB; --ink:#14211F; --muted:#4A5B58; --line:#D3DCD8;
+  --brand:#12302E; --brand-ink:#F2F5F2; --accent:#A8472A; --accent-soft:#F4E1D7;
+  --good:#1B6544; --good-soft:#DDF0E6; --warn:#7D5200; --warn-soft:#F7E8C6; --focus:#2563C9;
+  --display:'Cormorant Garamond', Georgia, serif; --body:'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1918; --surface:#152624; --ink:#E9F0ED; --muted:#A3B6B1; --line:#2B403C;
+    --brand:#E9A27F; --brand-ink:#12302E; --accent:#EFA783; --accent-soft:#3A2A22;
+    --good:#6FD0A2; --good-soft:#173A2B; --warn:#E8BC5C; --warn-soft:#3A3114; --focus:#7FB0FF; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1918; --surface:#152624; --ink:#E9F0ED; --muted:#A3B6B1; --line:#2B403C;
+  --brand:#E9A27F; --brand-ink:#12302E; --accent:#EFA783; --accent-soft:#3A2A22;
+  --good:#6FD0A2; --good-soft:#173A2B; --warn:#E8BC5C; --warn-soft:#3A3114; --focus:#7FB0FF; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.app{max-width:780px;margin-inline:auto;padding-inline:clamp(16px,4vw,32px);padding-block:24px 56px}
+.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.mark{font-family:var(--display);font-weight:700;font-size:36px;letter-spacing:.14em;color:var(--brand);line-height:1}
+.sub{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.prog-label{margin-top:28px;font-size:14px;color:var(--muted);font-weight:500}
+.prog{display:flex;gap:8px;margin-top:8px}
+.prog span{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.prog span.on{background:var(--accent)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(32px,6.5vw,46px);line-height:1.08;margin:28px 0 0;text-wrap:balance}
+h1:focus{outline:none}
+.lede{color:var(--muted);margin:10px 0 0;max-width:58ch}
+.options{display:grid;gap:12px;margin-top:24px}
+@media (min-width:640px){.options.two{grid-template-columns:1fr 1fr}}
+.opt{position:relative;display:flex;gap:14px;align-items:flex-start;padding:16px 18px;min-height:64px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.ind{flex:none;width:24px;height:24px;margin-top:1px;border:2px solid var(--muted);display:grid;place-items:center;color:transparent;border-radius:50%}
+.opt.chk .ind{border-radius:6px}
+.opt:has(input:checked) .ind{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.opt .t{font-weight:700;display:block}
+.opt .h{display:block;color:var(--muted);font-size:15px}
+.group{margin-top:26px}
+.group h2{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.group .options{margin-top:10px}
+.count{margin:22px 0 0;color:var(--muted);font-size:15px}
+.q{margin-top:30px}
+.q h2{font-size:20px;margin:0;font-weight:700}
+.q p{margin:4px 0 0;color:var(--muted);font-size:15px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:32px;flex-wrap:wrap}
+.btn{min-height:52px;padding:0 26px;border-radius:10px;border:1.5px solid var(--brand);background:var(--brand);color:var(--brand-ink);font:700 17px var(--body);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn:focus-visible,.chip:focus-visible,.alt:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.money{display:flex;align-items:baseline;gap:12px;margin-top:24px;border-bottom:2px solid var(--ink)}
+.money label{font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.1em}
+.money input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:700 clamp(40px,10vw,60px) var(--display);padding:0 0 4px;font-variant-numeric:tabular-nums}
+.money input:focus{outline:none}
+.money:focus-within{border-bottom-color:var(--accent)}
+input[type=range]{width:100%;margin:22px 0 0;accent-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:500 16px var(--body);cursor:pointer;font-variant-numeric:tabular-nums}
+.chip.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:700}
+.hero{margin-top:24px;border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:clamp(20px,4vw,34px)}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:14px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+.tag.good{background:var(--good-soft);color:var(--good)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.hero h2{font-family:var(--display);font-size:clamp(30px,6vw,40px);line-height:1.1;margin:14px 0 0;font-weight:700;text-wrap:balance}
+.opt-name{margin:4px 0 0;color:var(--muted)}
+.price-l{margin:22px 0 0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.price{font-family:var(--display);font-weight:700;font-size:clamp(54px,15vw,96px);line-height:1;color:var(--brand);font-variant-numeric:tabular-nums;margin:2px 0 0}
+.price small{font-size:.38em;letter-spacing:.06em;margin-right:.3em}
+.pnote{margin:8px 0 0;color:var(--muted);font-size:15px}
+.rows{margin-top:24px}
+.rows h3{margin:0 0 4px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid var(--line)}
+.row .p{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.row .s{font-weight:500}
+.row .r{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:500}
+.row.tot{font-weight:700}
+.row>div{min-width:0}
+.cov{margin-top:22px;display:flex;flex-wrap:wrap;gap:8px}
+.callout{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn);font-size:15px}
+.fine{margin:20px 0 0;color:var(--muted);font-size:15px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+.others{margin-top:34px}
+.others h3{margin:0 0 10px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.alt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.alt.sel{border-color:var(--accent)}
+.alt .n{font-weight:700}
+.alt .m{grid-column:1;color:var(--muted);font-size:15px}
+.alt .pr{grid-row:1;grid-column:2;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.alt .st{grid-row:2;grid-column:2;font-size:14px;font-weight:700;text-align:right}
+.alt .st.good{color:var(--good)} .alt .st.warn{color:var(--warn)}
+.staff{margin-top:40px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:15px}
+.staff summary{cursor:pointer;font-weight:700}
+.staff .grid{display:grid;gap:10px;margin-top:12px}
+.staff label{display:flex;gap:10px;align-items:center;color:var(--ink)}
+.stat{margin:10px 0 0;font-size:14px;color:var(--muted);min-height:1.4em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+textarea.sum{width:100%;min-height:150px;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:14px/1.5 var(--body)}
+@media (prefers-reduced-motion:no-preference){.hero{animation:rise .35s ease-out}}
+@keyframes rise{from{opacity:.0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><span class="mark">CURA</span><span class="sub">Package Finder</span></header>
+  <div class="prog-label" id="proglabel"></div>
+  <div class="prog" id="prog" aria-hidden="true"></div>
+  <main id="stage"></main>
+  <details class="staff" id="staff">
+    <summary>Staff settings</summary>
+    <div class="grid">
+      <label><input type="radio" name="fee" id="fee-pct" value="pct" checked> Custom builds: 15% aggregation fee on partner rates</label>
+      <label><input type="radio" name="fee" id="fee-flat" value="flat"> Custom builds: flat PHP 100 per service voucher</label>
+      <label><input type="checkbox" id="show-margin"> Show partner cost and margin on the result</label>
+    </div>
+  </details>
+  <p class="stat sr" id="status" role="status" aria-live="polite"></p>
+</div>
+
+<script>
+// ENGINE START
+const FEE_PCT = 0.15, FEE_FLAT = 100;
+const NEEDS = {
+  back:{label:'Stiff neck, shoulders or back', hint:'Thai Boran back massage'},
+  headache:{label:'Tension headache or screen fatigue', hint:'Boss Barbershop scalp massage'},
+  body:{label:'Whole-body tiredness', hint:'Thai Boran Thai body massage'},
+  feet:{label:'Tired feet or legs', hint:'Thai Boran foot massage'},
+  pedicure:{label:'Pedicure or foot spa', hint:'Nail Cocktales'},
+  hands:{label:'Hand and nail cleaning', hint:'Fix Bench manicure cleaning'},
+  haircut:{label:'Overdue haircut', hint:'Cut and wash or stylist cut'},
+  shave:{label:'Shave or beard grooming', hint:'Boss Barbershop razor shave'},
+  styling:{label:'Hair styling for an event', hint:'Fix Bench cleanse and fix'},
+  hairtx:{label:'Dry or damaged hair', hint:'Fix Bench hair spa'}
+};
+const GROUPS = [
+  {title:'Body and mind', ids:['back','headache','body']},
+  {title:'Hands and feet', ids:['feet','pedicure','hands']},
+  {title:'Hair and grooming', ids:['haircut','shave','styling','hairtx']}
+];
+const OCCASIONS = [
+  {id:'midterms', label:'Exam week study break', hint:'Relief for neck, shoulder and head tension', needs:['back','headache']},
+  {id:'defense', label:'Thesis defense, interview or formal event', hint:'Clean, camera-ready grooming', needs:['haircut','hands']},
+  {id:'finals', label:'Post-finals recovery', hint:'A full reset after term-end all-nighters', needs:['back','body','pedicure','hairtx']},
+  {id:'refresh', label:'A regular refresh', hint:'Pick exactly what you need on the next screen', needs:[]}
+];
+const MASSAGE = ['back','body','feet'];
+const PARTNER_ORDER = ['Thai Boran','Boss Barbershop','Fix Bench Salon','Nail Cocktales'];
+// Pre-made packages: partner base cost and CURA price from the concept paper; service rates from the Master Price List.
+const PACKAGES = [
+  {id:'p1a', name:'Midterms De-Stress Express', option:'Barbershop track', track:'barber', occasion:'midterms', duration:'About 1.5 hours', base:830, price:980,
+   covers:['back','headache'], items:[['Thai Boran','1-hour back massage'],['Boss Barbershop','Scalp massage']]},
+  {id:'p1b', name:'Midterms De-Stress Express', option:'Salon track', track:'salon', occasion:'midterms', duration:'About 1.5 hours', base:1000, price:1180,
+   covers:['back','headache','styling'], items:[['Thai Boran','1-hour back massage'],['Fix Bench Salon','Cleanse and fix styling']]},
+  {id:'p2a', name:'Defense Day / Formal Event Ready', option:'Barbershop track', track:'barber', occasion:'defense', duration:'About 1 to 1.5 hours', base:820, price:950,
+   covers:['haircut','shave','hands'], items:[['Boss Barbershop','Cut and wash'],['Boss Barbershop','Razor shave'],['Fix Bench Salon','Manicure cleaning']]},
+  {id:'p2b', name:'Defense Day / Formal Event Ready', option:'Salon track', track:'salon', occasion:'defense', duration:'About 1 to 1.5 hours', base:750, price:880,
+   covers:['haircut','hands'], items:[['Fix Bench Salon','Stylist haircut'],['Fix Bench Salon','Manicure cleaning']]},
+  {id:'p3', name:'Head-to-Toe Executive Care', option:'Three partners', track:'barber', occasion:null, duration:'About 2.5 hours', base:1950, price:2250,
+   covers:['haircut','body','feet','pedicure'], items:[['Boss Barbershop','Cut and wash'],['Thai Boran','1-hour Thai body massage'],['Nail Cocktales','A Hole In One: pedicure, foot spa, foot massage, paraffin']]},
+  {id:'p4', name:'Post-Finals Full Reset', option:'Three partners', track:null, occasion:'finals', duration:'About 3.5 hours', base:3300, price:3750, massageCap:2,
+   covers:['back','body','feet','pedicure','hairtx'], items:[['Thai Boran','2-hour combo massage (any two)'],['Fix Bench Salon','Hair spa treatment'],['Nail Cocktales','Captain Cola: pedicure and foot spa']]}
+];
+const r2 = n => Math.round(n*100)/100;
+function money(n){ return 'PHP ' + n.toLocaleString('en-PH',{minimumFractionDigits:Number.isInteger(n)?0:2, maximumFractionDigits:2}); }
+
+function buildCustom(needSet, o){
+  const ns = new Set(needSet), items = [];
+  const add = (partner, service, rate, covers) => items.push({partner, service, rate, covers});
+  let m = MASSAGE.filter(k => ns.has(k));
+  if (ns.has('pedicure') && ns.has('feet')) {
+    add('Nail Cocktales','A Hole In One: pedicure, foot spa, foot massage, paraffin',1100,['pedicure','feet']);
+    m = m.filter(k => k !== 'feet');
+  } else if (ns.has('pedicure')) add('Nail Cocktales','Captain Cola: pedicure and foot spa',750,['pedicure']);
+  const mn = {back:'back massage', body:'Thai body massage', feet:'foot massage'};
+  if (m.length === 1) add('Thai Boran','1-hour '+mn[m[0]],500,m);
+  else if (m.length === 2) add('Thai Boran','2-hour combo: '+mn[m[0]]+' and '+mn[m[1]],950,m);
+  else if (m.length === 3) add('Thai Boran','3-hour unlimited choice of massage',1400,m);
+  if (ns.has('headache')) add('Boss Barbershop','Scalp massage',330,['headache']);
+  if (ns.has('haircut')) {
+    if (o.cutPref === 'salon') add('Fix Bench Salon','Stylist haircut',500,['haircut']);
+    else add('Boss Barbershop','Cut and wash',350,['haircut']);
+  }
+  if (ns.has('shave')) add('Boss Barbershop','Razor shave',220,['shave']);
+  if (ns.has('hands')) add('Fix Bench Salon','Manicure cleaning',250,['hands']);
+  if (ns.has('styling')) add('Fix Bench Salon','Cleanse and fix styling',500,['styling']);
+  if (ns.has('hairtx')) add('Fix Bench Salon','Hair spa treatment ('+(o.hair==='long'?'long':'short')+' hair)',o.hair==='long'?2100:1600,['hairtx']);
+  items.sort((a,b) => PARTNER_ORDER.indexOf(a.partner) - PARTNER_ORDER.indexOf(b.partner));
+  const subtotal = items.reduce((s,i) => s + i.rate, 0);
+  const fee = r2(o.feeMode === 'flat' ? items.length * FEE_FLAT : subtotal * FEE_PCT);
+  return {items, subtotal, fee, total:r2(subtotal + fee)};
+}
+function trimCustom(N, budget, o){
+  const cur = new Set(N), dropped = [];
+  while (cur.size) {
+    const c = buildCustom(cur, o);
+    if (c.total <= budget) return {c, kept:[...cur], dropped};
+    if (cur.size === 1) return null;
+    let worst = null, wp = -1;
+    cur.forEach(id => { const p = buildCustom(new Set([id]), o).total; if (p > wp) { wp = p; worst = id; } });
+    cur.delete(worst); dropped.push(worst);
+  }
+  return null;
+}
+function coverage(p, N){
+  let cov = p.covers.filter(c => N.has(c));
+  if (p.massageCap) {
+    const ms = cov.filter(c => MASSAGE.includes(c));
+    if (ms.length > p.massageCap) cov = cov.filter(c => !MASSAGE.includes(c)).concat(ms.slice(0, p.massageCap));
+  }
+  return cov;
+}
+function compute(a){
+  const N = new Set(a.needs), n = N.size;
+  const budget = a.noLimit ? Infinity : (a.budget == null ? Infinity : a.budget);
+  const o = {cutPref:a.cutPref, hair:a.hair, feeMode:a.feeMode};
+  const cands = [];
+  PACKAGES.forEach(p => {
+    const cov = coverage(p, N);
+    const recall = cov.length / n;
+    if (recall < 0.5) return;
+    const eff = p.massageCap ? p.covers.length - 1 : p.covers.length;
+    let s = 0.7*recall + 0.3*(cov.length/eff);
+    if (a.occasion && p.occasion === a.occasion) s += 0.12;
+    if (N.has('haircut') && p.covers.includes('haircut') && a.cutPref !== 'any' && p.track !== (a.cutPref === 'salon' ? 'salon' : 'barber')) s -= 0.25;
+    let price = p.price, adj = 0, base = p.base;
+    if (p.id === 'p4' && N.has('hairtx') && a.hair === 'long') { adj = 500; price += adj; base += adj; }
+    cands.push({id:p.id, kind:'package', name:p.name, option:p.option, duration:p.duration, price, base, adj,
+      items:p.items.map(i => ({partner:i[0], service:i[1]})), covered:cov, missing:[...N].filter(x => !cov.includes(x)), score:s});
+  });
+  const full = buildCustom(N, o);
+  cands.push({id:'custom', kind:'custom', name:'Build-your-own set', option:'Every item on your checklist', price:full.total, base:full.subtotal, fee:full.fee,
+    items:full.items, covered:[...N], missing:[], score:0.99});
+  if (full.total > budget) {
+    const t = trimCustom(N, budget, o);
+    if (t) cands.push({id:'trim', kind:'trimmed', name:'Build-your-own set, trimmed to your budget', option:'Most of your checklist', price:t.c.total, base:t.c.subtotal, fee:t.c.fee,
+      items:t.c.items, covered:t.kept, missing:t.dropped, dropped:t.dropped, score:0.7*(t.kept.length/n)+0.3});
+  }
+  cands.forEach(c => { c.within = c.price <= budget; });
+  const within = cands.filter(c => c.within).sort((x,y) => y.score - x.score);
+  const over = cands.filter(c => !c.within).sort((x,y) => y.score - x.score);
+  let rec = within[0] || null, closest = false;
+  if (!rec) {
+    // Budget is below every option: show the cheapest single service as the closest match.
+    let best = null;
+    N.forEach(id => { const c = buildCustom(new Set([id]), o); if (!best || c.total < best.c.total) best = {id, c}; });
+    const cc = {id:'closest', kind:'closest', name:'Lowest-priced option for your checklist', option:NEEDS[best.id].label, price:best.c.total, base:best.c.subtotal, fee:best.c.fee,
+      items:best.c.items, covered:[best.id], missing:[...N].filter(x => x !== best.id), score:0, within:false};
+    cands.push(cc); rec = cc; closest = true;
+  }
+  const bestOverall = cands.slice().sort((x,y) => y.score - x.score)[0];
+  return {cands, rec, closest, budget, within, over, bestOverall, n};
+}
+// ENGINE END
+
+const state = {step:'occasion', occasion:null, needs:new Set(), cutPref:'any', hair:'short', budget:null, noLimit:false, feeMode:'pct', margin:false, sel:null};
+const $ = s => document.querySelector(s);
+const stage = $('#stage');
+const LABEL = {occasion:'Occasion', needs:'Checklist', prefs:'Preferences', budget:'Budget', result:'Your match'};
+const CHECK = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHECK_BIG = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function stepsList(){
+  const s = ['occasion','needs'];
+  if (state.needs.has('haircut') || state.needs.has('hairtx')) s.push('prefs');
+  s.push('budget','result');
+  return s;
+}
+function go(step, focus){
+  state.step = step; render();
+  if (focus) { const h = stage.querySelector('h1'); if (h) h.focus(); window.scrollTo(0,0); }
+}
+function move(d){ if (state.step === 'budget' && d > 0) state.sel = null; const l = stepsList(); go(l[Math.max(0, Math.min(l.length-1, l.indexOf(state.step)+d))], true); }
+function reset(){ Object.assign(state,{occasion:null, needs:new Set(), cutPref:'any', hair:'short', budget:null, noLimit:false, sel:null}); go('occasion', true); }
+function effBudget(){ return state.noLimit ? Infinity : state.budget; }
+function canNext(){
+  if (state.step === 'occasion') return !!state.occasion;
+  if (state.step === 'needs') return state.needs.size > 0;
+  if (state.step === 'budget') return state.noLimit || (state.budget != null && state.budget > 0);
+  return true;
+}
+function progress(){
+  const l = stepsList(), i = l.indexOf(state.step);
+  $('#proglabel').textContent = 'Step ' + (i+1) + ' of ' + l.length + ' · ' + LABEL[state.step];
+  $('#prog').innerHTML = l.map((_,k) => '<span class="' + (k <= i ? 'on' : '') + '"></span>').join('');
+}
+function nav(nextLabel){
+  const first = state.step === 'occasion';
+  return '<div class="nav">' + (first ? '<span></span>' : '<button class="btn ghost" type="button" data-act="back">Back</button>') +
+    '<button class="btn" type="button" id="next" data-act="next"' + (canNext() ? '' : ' disabled') + '>' + (nextLabel || 'Next') + '</button></div>';
+}
+function render(){
+  progress();
+  const f = {occasion:rOccasion, needs:rNeeds, prefs:rPrefs, budget:rBudget, result:rResult}[state.step];
+  stage.innerHTML = f();
+}
+function opt(type, name, value, checked, title, hint, extra){
+  return '<label class="opt ' + (type === 'checkbox' ? 'chk ' : '') + (extra||'') + '"><input type="' + type + '" name="' + name + '" value="' + value + '"' + (checked ? ' checked' : '') + '>' +
+    '<span class="ind">' + CHECK_BIG + '</span><span><span class="t">' + title + '</span>' + (hint ? '<span class="h">' + hint + '</span>' : '') + '</span></label>';
+}
+function rOccasion(){
+  return '<h1 tabindex="-1">What is coming up for you?</h1><p class="lede">Pick the closest match. We will pre-fill your checklist on the next screen, and you can change any of it.</p>' +
+    '<div class="options" role="radiogroup" aria-label="Occasion">' + OCCASIONS.map(o => opt('radio','occasion',o.id,state.occasion===o.id,o.label,o.hint)).join('') + '</div>' + nav();
+}
+function rNeeds(){
+  return '<h1 tabindex="-1">What do you need today?</h1><p class="lede">Tick everything that applies. There is no limit.</p>' +
+    GROUPS.map(g => '<div class="group"><h2>' + g.title + '</h2><div class="options two">' +
+      g.ids.map(id => opt('checkbox','need',id,state.needs.has(id),NEEDS[id].label,NEEDS[id].hint)).join('') + '</div></div>').join('') +
+    '<p class="count" id="count">' + countText() + '</p>' + nav();
+}
+function countText(){ const n = state.needs.size; return n ? n + ' selected' : 'Select at least one to continue'; }
+function rPrefs(){
+  let h = '<h1 tabindex="-1">A couple of preferences</h1><p class="lede">These change which services we price for you.</p>';
+  if (state.needs.has('haircut')) h += '<div class="q"><h2>Where would you rather get your haircut?</h2><div class="options" role="radiogroup">' +
+    opt('radio','cut','barber',state.cutPref==='barber','Barbershop','Boss Barbershop, cut and wash') +
+    opt('radio','cut','salon',state.cutPref==='salon','Salon stylist','Fix Bench Salon, stylist haircut') +
+    opt('radio','cut','any',state.cutPref==='any','No preference','We will price the lower-cost option') + '</div></div>';
+  if (state.needs.has('hairtx')) h += '<div class="q"><h2>How long is your hair?</h2><p>Hair spa is priced by length. The partner confirms your length at the visit.</p><div class="options two" role="radiogroup">' +
+    opt('radio','hair','short',state.hair==='short','Short','Hair spa at the short rate') +
+    opt('radio','hair','long',state.hair==='long','Long','Hair spa at the long rate') + '</div></div>';
+  return h + nav();
+}
+const CHIPS = [1000,1500,2500,4000,6000];
+function rBudget(){
+  const v = state.noLimit || state.budget == null ? '' : state.budget;
+  const rv = Math.min(8000, Math.max(300, state.budget || 1500));
+  return '<h1 tabindex="-1">What is the most you want to spend?</h1><p class="lede">This is your maximum for everything, including CURA\'s service fee. We will only recommend sets that fit.</p>' +
+    '<div class="money"><label for="bud">PHP</label><input id="bud" type="number" inputmode="numeric" min="0" step="50" placeholder="0" value="' + v + '" aria-label="Maximum budget in pesos"></div>' +
+    '<input type="range" id="rng" min="300" max="8000" step="50" value="' + rv + '" aria-label="Maximum budget slider">' +
+    '<div class="chips" id="chips">' + CHIPS.map(c => '<button type="button" class="chip' + (!state.noLimit && state.budget === c ? ' on' : '') + '" data-chip="' + c + '">' + c.toLocaleString('en-PH') + '</button>').join('') +
+    '<button type="button" class="chip' + (state.noLimit ? ' on' : '') + '" data-chip="none">No limit</button></div>' + nav('See my match');
+}
+function needList(ids){ return ids.map(id => NEEDS[id].label.toLowerCase()).join(', '); }
+function rResult(){
+  const a = {needs:[...state.needs], occasion:state.occasion, cutPref:state.cutPref, hair:state.hair, budget:state.budget, noLimit:state.noLimit, feeMode:state.feeMode};
+  const R = compute(a);
+  const sel = R.cands.find(c => c.id === state.sel) || R.rec;
+  state.sel = sel.id;
+  const b = R.budget, fin = isFinite(b);
+  const tags = [];
+  if (R.closest) tags.push('<span class="tag warn">Over your budget</span>');
+  else if (sel.id === R.rec.id) tags.push('<span class="tag good">' + CHECK + (fin ? ' Best match within your budget' : ' Best match') + '</span>');
+  else tags.push('<span class="tag">Selected option</span>');
+  if (fin && sel.within) tags.push('<span class="tag good">' + money(b - sel.price) + ' under your ' + money(b) + ' maximum</span>');
+  if (fin && !sel.within) tags.push('<span class="tag warn">' + money(sel.price - b) + ' over your ' + money(b) + ' maximum</span>');
+  const custom = sel.kind !== 'package';
+  let rows = '';
+  if (custom) {
+    rows = sel.items.map(i => '<div class="row"><div><div class="p">' + i.partner + '</div><div class="s">' + i.service + '</div></div><div class="r">' + money(i.rate) + '</div></div>').join('') +
+      '<div class="row"><div><div class="s">CURA service fee</div><div class="p">' + (state.feeMode === 'flat' ? 'PHP 100 per service voucher' : '15% of partner rates') + '</div></div><div class="r">' + money(sel.fee) + '</div></div>' +
+      '<div class="row tot"><div>Final price</div><div class="r">' + money(sel.price) + '</div></div>';
+  } else {
+    rows = sel.items.map(i => '<div class="row"><div><div class="p">' + i.partner + '</div><div class="s">' + i.service + '</div></div></div>').join('') +
+      '<div class="row tot"><div>Package price</div><div class="r">' + money(sel.price) + '</div></div>';
+  }
+  const covTags = sel.covered.map(id => '<span class="tag good">' + CHECK + ' ' + NEEDS[id].label + '</span>').join('');
+  let miss = '';
+  if (sel.missing.length) miss = '<div class="callout">' + (sel.kind === 'trimmed' ? 'Trimmed to fit your budget. Left out: ' : 'Not included in this option: ') + needList(sel.missing) + '. Ask staff about adding these separately or raising your maximum.</div>';
+  let note = '';
+  if (R.closest) note = '<div class="callout">Your maximum is below the lowest price for the items you ticked. This is the cheapest single service we can offer for them. Raise your budget or remove items to see a full match.</div>';
+  else if (fin && R.bestOverall.id !== R.rec.id && R.bestOverall.score > R.rec.score + 0.05 && sel.id === R.rec.id)
+    note = '<div class="callout">Your closest overall match is ' + R.bestOverall.name + (R.bestOverall.kind === 'package' ? ' (' + R.bestOverall.option + ')' : '') + ' at ' + money(R.bestOverall.price) + ', which is ' + money(R.bestOverall.price - b) + ' over your maximum.</div>';
+  let adj = sel.adj ? '<p class="pnote">Includes PHP ' + sel.adj + ' for the long-hair hair spa rate.</p>' : '';
+  let staffRow = '';
+  if (state.margin) {
+    const mg = r2(sel.price - sel.base);
+    staffRow = '<p class="fine"><b>Staff view.</b> Partner cost ' + money(sel.base) + ', CURA margin ' + money(mg) + ' (' + (mg / sel.price * 100).toFixed(1) + '% of price).</p>';
+  }
+  const alts = R.cands.filter(c => c.id !== sel.id && c.id !== 'closest').sort((x,y) => y.score - x.score);
+  const aw = alts.filter(c => c.within).slice(0,3), ao = alts.filter(c => !c.within).slice(0,3);
+  const altHtml = c => '<button type="button" class="alt" data-alt="' + c.id + '"><span class="n">' + c.name + '</span><span class="pr">' + money(c.price) + '</span><span class="m">' + c.option + ' · covers ' + c.covered.length + ' of ' + R.n + '</span>' +
+    '<span class="st ' + (c.within ? 'good' : 'warn') + '">' + (c.within ? 'Fits budget' : money(c.price - b) + ' over') + '</span></button>';
+  const others = (aw.length ? '<div class="others"><h3>Other options that fit</h3>' + aw.map(altHtml).join('') + '</div>' : '') +
+    (ao.length ? '<div class="others"><h3>Over your budget</h3>' + ao.map(altHtml).join('') + '</div>' : '');
+  return '<h1 tabindex="-1">Your match</h1><p class="lede">Based on ' + R.n + ' checklist item' + (R.n === 1 ? '' : 's') + (fin ? ' and a maximum of ' + money(b) : ' with no budget limit') + '.</p>' +
+    '<section class="hero" aria-label="Recommended package"><div class="tags">' + tags.join('') + '</div>' +
+    '<h2>' + sel.name + '</h2><p class="opt-name">' + sel.option + (sel.duration ? ' · ' + sel.duration : '') + '</p>' +
+    '<p class="price-l">Final price</p><p class="price"><small>PHP</small>' + (Number.isInteger(sel.price) ? sel.price.toLocaleString('en-PH') : sel.price.toLocaleString('en-PH',{minimumFractionDigits:2})) + '</p>' + adj +
+    '<div class="rows"><h3>What is included</h3>' + rows + '</div>' +
+    '<div class="cov" aria-label="Checklist items covered">' + covTags + '</div>' + miss + note + staffRow +
+    '<p class="fine">Vouchers are valid for 60 days and redeemed off-campus at each partner. Hotline, hours and address are printed on your voucher sheet.</p>' +
+    '<div class="actions"><button class="btn" type="button" data-act="copy">Copy summary for staff</button><button class="btn ghost" type="button" data-act="budget">Change my budget</button><button class="btn ghost" type="button" data-act="reset">Start over</button></div>' +
+    '<div id="sumwrap"></div></section>' + others;
+}
+function summary(){
+  const a = {needs:[...state.needs], occasion:state.occasion, cutPref:state.cutPref, hair:state.hair, budget:state.budget, noLimit:state.noLimit, feeMode:state.feeMode};
+  const R = compute(a), sel = R.cands.find(c => c.id === state.sel) || R.rec, occ = OCCASIONS.find(o => o.id === state.occasion);
+  return ['CURA package match', 'Occasion: ' + (occ ? occ.label : 'none'), 'Needs: ' + needList(a.needs), 'Maximum budget: ' + (isFinite(R.budget) ? money(R.budget) : 'No limit'),
+    '', sel.name + (sel.option ? ' (' + sel.option + ')' : ''), ...sel.items.map(i => '- ' + i.partner + ': ' + i.service + (i.rate ? ' ' + money(i.rate) : '')),
+    sel.kind === 'package' ? '' : 'CURA service fee: ' + money(sel.fee), 'Final price: ' + money(sel.price)].filter(l => l !== undefined && l !== null).join('\n');
+}
+function say(t){ $('#status').textContent = t; }
+function fallbackCopy(text){
+  const w = $('#sumwrap'); if (!w) return;
+  w.innerHTML = '<textarea class="sum" id="sumtxt" readonly aria-label="Summary text"></textarea>';
+  const ta = $('#sumtxt'); ta.value = text; ta.focus(); ta.select(); say('Press Ctrl+C or long-press to copy the selected summary.');
+}
+function syncBudget(){
+  $('#next').disabled = !canNext();
+  const v = state.noLimit || state.budget == null ? '' : state.budget;
+  if (document.activeElement !== $('#bud')) $('#bud').value = v;
+  if (state.budget != null) $('#rng').value = Math.min(8000, Math.max(300, state.budget));
+  document.querySelectorAll('#chips .chip').forEach(c => {
+    const k = c.dataset.chip; c.classList.toggle('on', k === 'none' ? state.noLimit : (!state.noLimit && state.budget === Number(k)));
+  });
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act],[data-chip],[data-alt]'); if (!t) return;
+  if (t.dataset.act === 'next') move(1);
+  else if (t.dataset.act === 'back') move(-1);
+  else if (t.dataset.act === 'budget') go('budget', true);
+  else if (t.dataset.act === 'reset') reset();
+  else if (t.dataset.act === 'copy') {
+    const text = summary();
+    try { navigator.clipboard.writeText(text).then(() => say('Summary copied.'), () => fallbackCopy(text)); } catch (err) { fallbackCopy(text); }
+  } else if (t.dataset.chip) {
+    if (t.dataset.chip === 'none') { state.noLimit = true; } else { state.noLimit = false; state.budget = Number(t.dataset.chip); }
+    syncBudget();
+  } else if (t.dataset.alt) { state.sel = t.dataset.alt; render(); window.scrollTo(0,0); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.name === 'occasion') {
+    state.occasion = t.value; state.needs = new Set(OCCASIONS.find(o => o.id === t.value).needs);
+    $('#next').disabled = !canNext();
+  } else if (t.name === 'need') {
+    t.checked ? state.needs.add(t.value) : state.needs.delete(t.value);
+    $('#count').textContent = countText(); $('#next').disabled = !canNext();
+  } else if (t.name === 'cut') state.cutPref = t.value;
+  else if (t.name === 'hair') state.hair = t.value;
+  else if (t.name === 'fee') { state.feeMode = t.value; state.sel = null; if (state.step === 'result') render(); }
+  else if (t.id === 'show-margin') { state.margin = t.checked; if (state.step === 'result') render(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'bud') { const v = parseInt(t.value, 10); state.noLimit = false; state.budget = isNaN(v) || v <= 0 ? null : v; syncBudget(); }
+  else if (t.id === 'rng') { state.noLimit = false; state.budget = Number(t.value); syncBudget(); }
+});
+render();
+</script>
+</body>
+</html>
